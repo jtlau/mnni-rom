@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-from nodepy.ode_solver import ODESolver
+from Nodepy.ode_solver import ODESolver
 import Nodepy.rooted_trees as rt
 from six.moves import range
 

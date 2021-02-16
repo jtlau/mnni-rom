@@ -9,7 +9,7 @@ import Nodepy.linear_multistep_method as lm
 import timeit
 
 np.random.seed(1)
-tf.set_random_seed(1)
+tf.random.set_seed(1)
 
 class Multistep_NN:
     def __init__(self, dt, X, layers, M, scheme):
