@@ -9,10 +9,10 @@ import Nodepy.linear_multistep_method as lm
 import timeit
 
 np.random.seed(1)
-tf.random.set_seed(1)
+tf.compat.v1.set_random_seed(1)
 
 class Multistep_NN:
-    def __init__(self, dt, X, layers, M, scheme):
+    def __init__(self, dt, X, layers, M, scheme, beta, act_scheme='tanh'):
 
         self.dt = dt
         self.X = X # S x N x D
@@ -25,6 +25,12 @@ class Multistep_NN:
         
         self.layers = layers
         
+	# Set l2 regularization parameter
+	self.l2beta = beta
+	
+	# Set activation scheme
+	self.act_scheme = act_scheme
+	
         # Load weights
         switch = {'AM': lm.Adams_Moulton,
                   'AB': lm.Adams_Bashforth,
@@ -33,8 +39,9 @@ class Multistep_NN:
         self.alpha = np.float32(-method.alpha[::-1])
         self.beta = np.float32(method.beta[::-1])
                 
+	print("Creating placeholders and graph")
         # tf placeholders and graph
-        self.sess = tf.Session(config=tf.ConfigProto(log_device_placement=True))
+        self.sess = tf.Session(config=tf.compat.v1.ConfigProto(log_device_placement=True))
         
         self.X_tf = tf.placeholder(tf.float32, shape=[self.S, None, self.D]) # S x N x D
         self.X_star_tf = tf.placeholder(tf.float32, shape=[None, self.D]) # N_star x D
@@ -54,10 +61,17 @@ class Multistep_NN:
         self.sess.run(init)
                 
     def neural_net(self, H):
+	
+	act_func = tf.nn.tanh
+	if self.act_scheme == 'swish':
+	    act_func = tf.nn.swish
+	elif self.act_scheme == 'relu':
+	    act_func = tf.nn.relu
+	
         num_layers = len(self.layers)
         for l in range(0,num_layers-2):
             with tf.variable_scope("layer%d" %(l+1)):
-                H = tf.layers.dense(inputs=H, units=self.layers[l+1], activation=tf.nn.tanh)
+		H = tf.layers.dense(inputs=H, units=self.layers[l+1], activation=act_func)
         with tf.variable_scope("layer%d" %(num_layers-1)):
             H = tf.layers.dense(inputs=H, units=self.layers[-1], activation=None)
         return H
@@ -77,9 +91,12 @@ class Multistep_NN:
         
         return Y # S x (N-M+1) x D
     
-    def train(self, N_Iter):
+    def train(self, N_Iter, data=None):
         
-        tf_dict = {self.X_tf: self.X}
+	if data is None:
+            tf_dict = {self.X_tf: self.X}
+	else:
+	    tf_dict = {self.X_tf: data}
         
         start_time = timeit.default_timer()
         for it in range(N_Iter):
