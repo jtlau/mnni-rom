@@ -34,7 +34,7 @@ import Nodepy.snp as snp
 from Nodepy.general_linear_method import GeneralLinearMethod
 from six.moves import map
 from six.moves import range
-
+from sympy.functions.combinatorial.factorials import binomial, factorial
 
 class LinearMultistepMethod(GeneralLinearMethod):
     r"""
@@ -634,7 +634,7 @@ def Adams_Moulton(k):
     for j in range(1,k+1):
         gamma[j]= -sum(gamma[:j]/snp.arange(j+1,1,-1))
         for i in range(0,j+1):
-            betaj[k-i]=(-1)**i*sympy.combinatorial.factorials.binomial(j,i)*gamma[j]
+            betaj[k-i]=(-1)**i*binomial(j,i)*gamma[j]
         beta=beta+betaj
     name=str(k)+'-step Adams-Moulton'
     return LinearMultistepMethod(alpha,beta,name=name,shortname='AM'+str(k))
